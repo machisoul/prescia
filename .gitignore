@@ -1,0 +1,4 @@
+__pycache__/
+store.log
+*.log
+history/

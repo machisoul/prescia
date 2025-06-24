@@ -1,0 +1,5 @@
+history: history
+models:
+  - model: bottoming
+    model_path: models/bottoming_model/model.py
+    model_config: models/bottoming_model/config.yaml

@@ -1,0 +1,10 @@
+history: history
+period: day
+min_decline_days: 5
+max_decline_days: 10
+min_total_decline_rate: 0.20
+wait_days: 20
+payback_rate: 0.05
+success_profit: 0.045
+min_close: 1.5
+# 其他参数/权重可继续补充
