@@ -1,12 +1,11 @@
-print("文件已开始执行")
 import requests
 import time
 import os
 import math
 import csv
+import yaml
 from datetime import datetime
 from concurrent.futures import ThreadPoolExecutor, as_completed
-print("import finished")
 
 
 class FilterURL:
@@ -21,7 +20,16 @@ class FilterURL:
             filled_url = filled_url.replace("[fill]", f"{value}", 1)
         return filled_url
 
-def getAllStock(headers, base_filter_url, each_page_size):
+def load_config():
+    with open('astock/config.yaml', 'r') as f:
+        return yaml.safe_load(f)
+
+def getAllStock(config):
+    headers = config['headers']
+    base_filter_url = config['urls']['base_filter']
+    each_page_size = config['settings']['page_size']
+    exclude_names = config['stock_filter']['exclude_names']
+
     filter_url_first_page = FilterURL(base_filter_url, page="1", size=str(each_page_size), current_unix_time=str(int(time.time() * 1000)))
 
     print(f"Fetching stock symbols from: {filter_url_first_page.url}")
@@ -50,7 +58,7 @@ def getAllStock(headers, base_filter_url, each_page_size):
             print(f"第{i}页响应: {resp.text[:200]}")  # 只打印前200字符，防止太长
             data_list = resp.json().get('data', {}).get('list', [])
             for item in data_list:
-                if 'ST' not in item['name']:
+                if not any(excluded in item['name'] for excluded in exclude_names):
                     all_stock_symbol[item['symbol']] = item['name']
         except Exception as e:
             print(f"第{i}页请求出错:", e)
@@ -58,8 +66,9 @@ def getAllStock(headers, base_filter_url, each_page_size):
     print(f"Fetched {len(all_stock_symbol)} stock symbols.")
     return all_stock_symbol
 
-def fetch_stock_data(stock_symbol, base_history_url, headers, delta_days_str, history_dir):
-    print(stock_symbol)
+def fetch_stock_data(stock_symbol, config, delta_days_str, history_dir):
+    headers = config['headers']
+    base_history_url = config['urls']['base_history']
     history_url = FilterURL(base_history_url, symbol=stock_symbol, current_unix_time=str(int(time.time() * 1000)), count=delta_days_str)
     
     session = requests.Session()
@@ -81,12 +90,16 @@ def fetch_stock_data(stock_symbol, base_history_url, headers, delta_days_str, hi
         for item in items:
             writer.writerow(item)
 
-def storeAllStockHistory(headers, base_history_url, all_stock_symbol, target_path):
+def storeAllStockHistory(config, all_stock_symbol):
+    settings = config['settings']
+    history_dir = settings['history_dir']
+    log_file = settings['log_file']
+    delta_days = settings['delta_days']
+    max_workers = settings['max_workers']
+
     print("Storing all stock history data...")
-    history_dir = target_path
     log_file = 'store.log'
     last_time = None
-    delta_days = 500
 
     if not os.path.exists(history_dir):
         os.makedirs(history_dir)
@@ -115,9 +128,9 @@ def storeAllStockHistory(headers, base_history_url, all_stock_symbol, target_pat
     else:
         exit()
 
-    with ThreadPoolExecutor(max_workers=100) as executor:
+    with ThreadPoolExecutor(max_workers=max_workers) as executor:
         futures = [
-            executor.submit(fetch_stock_data, stock_symbol, base_history_url, headers, delta_days_str, history_dir)
+            executor.submit(fetch_stock_data, stock_symbol, config, delta_days_str, history_dir)
             for stock_symbol in all_stock_symbol.keys()
         ]
         
@@ -135,33 +148,11 @@ def storeAllStockHistory(headers, base_history_url, all_stock_symbol, target_pat
 
 
 def main():
-  print("Starting to store all stock history data...")
-  # begin: ====================================
-  headers = {"User-Agent": "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/124.0.0.0 Safari/537.36 Edg/124.0.0.0",
-              "Cookie": "cookiesu=471750730673586; Hm_lvt_1db88642e346389874251b5a1eded6e3=1750730675; HMACCOUNT=C62EE38431C5EE0F; device_id=803df54fcf822d42e9491a868dce5ffb; remember=1; xq_a_token=dc69165b441230e5ed5a19eb64d8a1b79c21ec0e; xqat=dc69165b441230e5ed5a19eb64d8a1b79c21ec0e; xq_id_token=eyJ0eXAiOiJKV1QiLCJhbGciOiJSUzI1NiJ9.eyJ1aWQiOjE5MTExOTE4MDEsImlzcyI6InVjIiwiZXhwIjoxNzUzMzIyNjk5LCJjdG0iOjE3NTA3MzA2OTkyMjQsImNpZCI6ImQ5ZDBuNEFadXAifQ.kgerdQP1xFNmiQNqCasNAzoqm84rFvNcLHmULoi1rabn1R3RrwtsCBxhd7coYsfVKPtNe6MYgIo-bp1gAoW3th7yUdyw8QYrAEDGldaeLPryTFdbTnwBg0Nf9_dtGGahL3oZPL3tdLr_KhYQIvh1OowOPvwJb3On5GnDGWn8C0IqrmnESeou9RAOxwCV06bgL7kCcRUkHiu4O_b-gjKPi8qXNKul9rNMSiR-uro05tWztZrh1sqs7PypvSLxma_7NwRdQ0HW4Mq0M6AYbH-6xm3jEPbWbT6OV9BxUPSPkiaWiYXUj39tByzjDnVtc_OwFNOmvbuHE4Lm2kUyV6ci0g; xq_r_token=e6c466f8974ffe56a8d71430a662572f6625ee31; xq_is_login=1; u=1911191801; is_overseas=0; Hm_lpvt_1db88642e346389874251b5a1eded6e3=1750730745; ssxmod_itna=eqRxyD07D=G=TqWqYj+hDQk43qxYqD5D2Dl4BU=rGglDFqAPDODCx7IgKNRxwYpSsGDFwW=qMD0yGYm9D06HDf40Wmz6De+1=beOgDp2UQGWQe7aUQIRuK7HqeRPqDqf24mIrTNR+RmDGoDbuoDfqDlDDmq6qGXUkdbDYYDC4GwDeG+beDWAeDLDYoDY3WoTeGhDB=DmqDB814DATia14DFbeWb==rDm4DfDDLepCxeiKGHDD3Wq1wmv8fQwoHDzRcv0Q2PIo+OiDGWiRbaaPGuDG6=bQWvD7jOSCybN1cHwpFkqXQl+2N6ApYAm8QDiiGwaqYaw7BPUiGj0eBGDieh8ex4ehKjqtbK6jj+Ap7lvgj2RhUcctB=qbD+/heK4IcnGB0eXADmOGxYR1nwsAGPexh7T4iGM7GKtbrbDxD; ssxmod_itna2=eqRxyD07D=G=TqWqYj+hDQk43qxYqD5D2Dl4BU=rGglDFqAPDODCx7IgKNRxwYpSsGDFwW=qmDDPE7Gii4WmPDFhD4EQrDGN4cm9DeaqO5GYKcU=YedLaLqf2QMLPrQTzGnx2CYXfWOGr04Rh5z0au7b=PCOcpxb2YOg6B827aQKU9kgpoh34EFXQihIaq+Re2aGauDRPTHI4g8AzcWdeSLgrGjZxoAZ8PwR7F06/b=EKlEMoa0utiRizSWUoxkVaS8FoqXI1lXzvZc+3px2i+Nf6wRI6DxEIUIK4v+XMcgYD=WwcnrBT+Tt5NlhxD4q+Gi+DDHBD9xDPD"
-  }
-
-  base_filter_url = (
-      "https://xueqiu.com/service/screener/screen?"
-      "category=CN&exchange=sh_sz&areacode=&indcode=&order_by=symbol&order=desc&page=[fill]&size=[fill]&only_count=0&"
-      "current=&pct=&mc=&volume="
-      "&_=[fill]"
-      )
-
-  all_stock = getAllStock(headers, base_filter_url, 30)
-
-  # with open('stock_symbols.txt', 'w') as f:
-  #     for symbol, name in all_stock.items():
-  #         f.write(f"{symbol}: {name}\n")
-  # exit()
-
-  base_history_url = (
-      "https://stock.xueqiu.com/v5/stock/chart/kline.json?"
-      "symbol=[fill]&begin=[fill]&"
-      "period=day&type=before&count=[fill]&indicator=kline,pe,pb,ps,pcf,market_capital,agt,ggt,balance"
-      )
-  storeAllStockHistory(headers, base_history_url, all_stock, "history")
-
+    print("Starting to store all stock history data...")
+    config = load_config()
+    
+    all_stock = getAllStock(config)
+    storeAllStockHistory(config, all_stock)
 
 if __name__ == "__main__":
     main()
