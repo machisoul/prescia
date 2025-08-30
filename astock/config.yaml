@@ -1,6 +1,6 @@
 headers:
   User-Agent: "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/124.0.0.0 Safari/537.36 Edg/124.0.0.0"
-  Cookie: "cookiesu=471750730673586; Hm_lvt_1db88642e346389874251b5a1eded6e3=1750730675; HMACCOUNT=C62EE38431C5EE0F; device_id=803df54fcf822d42e9491a868dce5ffb; remember=1; xq_a_token=dc69165b441230e5ed5a19eb64d8a1b79c21ec0e; xqat=dc69165b441230e5ed5a19eb64d8a1b79c21ec0e; xq_id_token=eyJ0eXAiOiJKV1QiLCJhbGciOiJSUzI1NiJ9.eyJ1aWQiOjE5MTExOTE4MDEsImlzcyI6InVjIiwiZXhwIjoxNzUzMzIyNjk5LCJjdG0iOjE3NTA3MzA2OTkyMjQsImNpZCI6ImQ5ZDBuNEFadXAifQ.kgerdQP1xFNmiQNqCasNAzoqm84rFvNcLHmULoi1rabn1R3RrwtsCBxhd7coYsfVKPtNe6MYgIo-bp1gAoW3th7yUdyw8QYrAEDGldaeLPryTFdbTnwBg0Nf9_dtGGahL3oZPL3tdLr_KhYQIvh1OowOPvwJb3On5GnDGWn8C0IqrmnESeou9RAOxwCV06bgL7kCcRUkHiu4O_b-gjKPi8qXNKul9rNMSiR-uro05tWztZrh1sqs7PypvSLxma_7NwRdQ0HW4Mq0M6AYbH-6xm3jEPbWbT6OV9BxUPSPkiaWiYXUj39tByzjDnVtc_OwFNOmvbuHE4Lm2kUyV6ci0g; xq_r_token=e6c466f8974ffe56a8d71430a662572f6625ee31; xq_is_login=1; u=1911191801; is_overseas=0; Hm_lpvt_1db88642e346389874251b5a1eded6e3=1750730745"
+  Cookie: "" # set to your cookie
 
 urls:
   base_filter: "https://xueqiu.com/service/screener/screen?category=CN&exchange=sh_sz&areacode=&indcode=&order_by=symbol&order=desc&page=[fill]&size=[fill]&only_count=0&current=&pct=&mc=&volume=&_=[fill]"

@@ -3,6 +3,7 @@ import argparse
 import logging
 import os
 import subprocess
+import yaml
 from models.bottoming_model.model import BottomingModel, load_config
 from config import PresciaConfig, prescia_input
 
@@ -37,6 +38,14 @@ def main():
         "--fetch-astock", action="store_true",
         help="Run astock history data script"
     )
+    parser.add_argument(
+        "--database", type=str,
+        help="Database path"
+    )
+    parser.add_argument(
+        "--model", type=str, default="bottoming",
+        help="Model to run (default: bottoming)"
+    )
 
     args = parser.parse_args()
     setup_logging(args.log)
@@ -50,8 +59,8 @@ def main():
     model_config_path = model_conf["model_config"]
 
     if args.fetch_astock:
-        astock_script = args.astock_script or main_config.astock_history_script
-        astock_config = args.astock_config or main_config.astock_config
+        astock_script = main_config.astock_history_script
+        astock_config = main_config.astock_config
         if not os.path.exists(astock_script):
             logging.error(f"astock script not found: {astock_script}")
             return
@@ -62,7 +71,7 @@ def main():
         subprocess.run(["python", astock_script], env={**os.environ, "CONFIG_PATH": astock_config})
         return
 
-    config = load_config(args.config)
+    config = load_config(model_config_path)
     if args.database:
         config["history"] = args.database
 
